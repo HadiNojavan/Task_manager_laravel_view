@@ -1,6 +1,6 @@
 <x-layout title="Login">
 
-    <h1>Login to the System</h1>
+    <h1>Login</h1>
 
     @if ($errors->any())
         <p style="color:red">{{ $errors->first() }}</p>
@@ -18,5 +18,7 @@
         </div>
         <button type="submit">Login</button>
     </form>
+
+    <p>Don't have an account? <a href="{{ route('register.page') }}">Register</a></p>
 
 </x-layout>

@@ -2,16 +2,18 @@
 
     <h1>Admin Panel</h1>
 
+    <p>Role: {{ $role }}</p>
+
     <ul>
-        <li><a href="{{ route('users.page') }}">Users</a></li>
-        <li><a href="{{ route('tasks.restore.page') }}">Restore Task</a></li>
-        <li><a href="{{ route('tasks.assign.page') }}">Assign Task</a></li>
-        <li><a href="{{ route('tasks.unassign.page') }}">Unassign Task</a></li>
+        <li>Users (coming soon)</li>
+        <li>Restore Task (coming soon)</li>
+        <li>Assign Task (coming soon)</li>
+        <li>Unassign Task (coming soon)</li>
 
         @if ($role == 'superadmin')
-            <li><a href="{{ route('admins.create.page') }}">Add Admin</a></li>
-            <li><a href="{{ route('tasks.force-delete.page') }}">Force Delete</a></li>
-            <li><a href="{{ route('users.delete.page') }}">Delete User</a></li>
+            <li>Add Admin (coming soon)</li>
+            <li>Force Delete Task (coming soon)</li>
+            <li>Delete User (coming soon)</li>
         @endif
     </ul>
 
