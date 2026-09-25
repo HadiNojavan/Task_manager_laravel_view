@@ -5,15 +5,17 @@
     <p>Role: {{ $role }}</p>
 
     <ul>
-        <li>Users (coming soon)</li>
-        <li>Restore Task (coming soon)</li>
-        <li>Assign Task (coming soon)</li>
-        <li>Unassign Task (coming soon)</li>
+        <li><a href="{{ route('users.page') }}">Users</a></li>
+        @if($role=='admin')
+            <li><a href="{{ route('tasks.trashed.page') }}">Restore Task</a></li>
+        @endif
+        <li><a href="{{ route('tasks.assign.page') }}">Assign Task</a></li>
+            <a href="{{ route('tasks.unassign.page') }}">Unassign Task</a>
 
-        @if ($role == 'superadmin')
-            <li>Add Admin (coming soon)</li>
-            <li>Force Delete Task (coming soon)</li>
-            <li>Delete User (coming soon)</li>
+        @if ($role == 'super_admin')
+            <li><a href="{{ route('admins.create.page') }}">Add Admin</a></li>
+            <a href="{{ route('tasks.trashed.page') }}">Force Delete Task or restore</a>
+            <li><a href="{{ route('users.page') }}">Delete User</a></li>
         @endif
     </ul>
 

@@ -136,6 +136,203 @@ class TaskWebController extends Controller
         }
     }
 
+    public function trashed(Request $request, ApiClient $apiClient)
+{
+    if (!session()->has('token')) {
+        return redirect()->route('login.page');
+    }
+
+    try {
+        $response = $apiClient->client()->get('/api/tasks/trashed', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . session('token'),
+            ],
+            'query' => [
+                'page' => $request->query('page', 1),
+            ],
+        ]);
+
+        $result = json_decode($response->getBody(), true);
+
+        $tasks = $result['data'];
+        $meta  = $result['meta'];
+
+        $role = session('user')['role'] ?? null;
+
+        return view('admin.trashed-tasks', compact('tasks', 'meta', 'role'));
+
+    } catch (RequestException $e) {
+        return redirect()->route('admin.page')->withErrors(['api' => 'Failed to load trashed tasks']);
+    }
+}
+
+    public function restore($id, ApiClient $apiClient)
+    {
+        try {
+            $apiClient->client()->patch("/api/tasks/{$id}/restore", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('token'),
+                ],
+            ]);
+
+            return redirect()->route('tasks.trashed.page');
+
+        } catch (RequestException $e) {
+            return redirect()->route('tasks.trashed.page')->withErrors(['api' => 'Failed to restore task']);
+        }
+    }
+
+    public function forceDelete($id, ApiClient $apiClient)
+    {
+        try {
+            $apiClient->client()->delete("/api/tasks/{$id}/force-delete", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('token'),
+                ],
+            ]);
+
+            return redirect()->route('tasks.trashed.page');
+
+        } catch (RequestException $e) {
+            return redirect()->route('tasks.trashed.page')->withErrors(['api' => 'Failed to permanently delete task']);
+        }
+    }
+
+    public function assignPage(ApiClient $apiClient)
+    {
+
+        if (!session()->has('token')) {
+            return redirect()->route('login.page');
+        }
+
+        try {
+            $response = $apiClient->client()->get('/api/tasks/assign-data', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('token'),
+                ],
+            ]);
+
+            $result = json_decode($response->getBody(), true);
+
+            $tasks = $result['tasks'] ?? [];
+            $users = $result['users'] ?? [];
+
+            return view('tasks.assign', compact('tasks', 'users'));
+
+        } catch (RequestException $e) {
+            return redirect()->route('admin.page')
+                ->withErrors(['api' => 'Failed to load tasks or users']);
+        }
+    }
+
+    public function assign(Request $request, ApiClient $apiClient)
+    {
+        $request->validate([
+            'task_id' => ['required', 'integer'],
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['integer'],
+        ]);
+
+
+        try {
+            $apiClient->client()->post("/api/tasks/{$request->task_id}/assign", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('token'),
+                ],
+                'json' => [
+                    'user_ids' => $request->user_ids,
+                ],
+            ]);
+
+            return redirect()->route('admin.page')
+                ->with('success', 'Task assigned successfully');
+
+        } catch (RequestException $e) {
+            $message = $e->getResponse()
+                ? json_decode($e->getResponse()->getBody(), true)
+                : ['message' => 'Failed to assign task'];
+
+            return back()->withErrors([
+                'api' => $message['message'] ?? 'Failed to assign task'
+            ])->withInput();
+        }
+    }
+
+    public function unassignPage(Request $request, ApiClient $apiClient)
+    {
+        if (!session()->has('token')) {
+            return redirect()->route('login.page');
+        }
+
+        try {
+            $response = $apiClient->client()->get('/api/tasks/assign-data', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('token'),
+                ],
+            ]);
+
+            $result = json_decode($response->getBody(), true);
+
+            $tasks = $result['tasks'] ?? [];
+
+            $assignedUsers = [];
+            $selectedTask = null;
+
+            if ($request->filled('task_id')) {
+
+                $taskId = $request->input('task_id');
+
+                $taskResponse = $apiClient->client()->get("/api/tasks/{$taskId}", [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . session('token'),
+                    ],
+                ]);
+
+                $taskResult = json_decode($taskResponse->getBody(), true);
+
+                $selectedTask = $taskResult['data'] ?? null;
+                $assignedUsers = $selectedTask['assigned_users'] ?? [];
+            }
+
+            return view('tasks.unassign', compact(
+                'tasks',
+                'selectedTask',
+                'assignedUsers'
+            ));
+
+        } catch (RequestException $e) {
+            return redirect()->route('admin.page')
+                ->withErrors(['api' => 'Failed to load task or assigned users']);
+        }
+    }
+
+    public function unassign($taskId, $userId, ApiClient $apiClient)
+    {
+        try {
+            $apiClient->client()->delete(
+                "/api/tasks/{$taskId}/unassign/{$userId}",
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . session('token'),
+                    ],
+                ]
+            );
+
+            return redirect()
+                ->route('tasks.unassign.page', ['task_id' => $taskId])
+                ->with('success', 'User unassigned successfully');
+
+        } catch (RequestException $e) {
+            $message = $e->getResponse()
+                ? json_decode($e->getResponse()->getBody(), true)
+                : ['message' => 'Failed to unassign user'];
+
+            return back()->withErrors([
+                'api' => $message['message'] ?? 'Failed to unassign user'
+            ]);
+        }
+    }
+
     private function getCategories(ApiClient $apiClient): array
     {
         try {
